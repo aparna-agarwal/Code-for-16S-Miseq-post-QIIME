@@ -1,0 +1,173 @@
+# relative abundance from raw with mitochondria+chloroplast---------------------------------------------
+
+
+
+##for generating relative abundance tables##
+data_miseq <- read.csv("without_mit_chl_raw.csv")
+#head(data_miseq)
+data1 <- data_miseq[,1]
+
+data_miseq<- data_miseq[,-1]
+data_attr <- data_miseq[,1:13]
+data2 <- data_miseq[ ,-(1:13)]
+data_forabun <- data2
+sum_allreads <- rowsum(data_forabun)
+sum_allreads
+rownames(data_forabun) <- data_attr$code_block
+#ds<-rankabundance(data_forabun)
+#rankabunplot(ds)
+#specaccum(data_forabun, method = "exact", permutations = 100,conditioned =TRUE, gamma = "jack1")
+data2[ data2 < 20] <-0 
+rowselem<-which(colSums(data2)!=0)
+#dat4_0 = dat4[ rowSums(dat4)!=0, ]
+datx <- data2
+datx <- datx[,rowselem]
+a <- rowSums(datx)
+dat_abun <- datx
+abundance <- NULL
+for( i in 1:length(data_attr$code))
+{
+  dat_abun[i,] = dat_abun[i,]/a[i]
+}
+dat_abun<- replace(dat_abun, is.na(dat_abun), 0)
+#head(dat_abun)
+abundance <-cbind(data_attr,dat_abun)
+
+
+
+write.csv(abundance,"with_mit_chl_abundance.csv")
+
+# creating relative abundance without mitochondria+chloroplast ------------
+
+
+
+
+data_miseq <- read.csv("without_mit_chl_raw.csv")
+#head(data_miseq)
+data_miseq <- data_miseq[,-1]
+data_attr <- data_miseq[,1:9]
+data2 <- data_miseq[ ,-(1:9)]
+data2[ data2 < 20] <-0 
+rowselem<-which(colSums(data2)!=0)
+#dat4_0 = dat4[ rowSums(dat4)!=0, ]
+datx <- data2
+datx <- datx[,rowselem]
+a <- rowSums(datx)
+dat_abun <- datx
+abundance <- NULL
+for( i in 1:length(data_attr$code))
+{
+  dat_abun[i,] = dat_abun[i,]/a[i]
+}
+dat_abun<- replace(dat_abun, is.na(dat_abun), 0)
+#head(dat_abun)
+abundance <-cbind(data_attr,dat_abun)
+
+write.csv(abundance,"without_mit_chl.csv")
+
+# for generating the average file -----------------------------------------
+
+
+
+###for generating the averages table ##
+
+library(RColorBrewer)
+data_orig <- read.csv("without_mit_chl.csv",row.names = 1 )
+
+##To create averages across replicates##
+data_analysis <- data_orig[,-1]
+#data_analysis[,12]
+final_table <- NULL
+num <- which(rowSums(data_analysis[,13:ncol(data_analysis)])==0)
+elim <- data_analysis[num,]
+
+write.csv(elim,"all_removed.csv")
+data_analysis <- data_analysis[-num,]
+all_info <- as.vector(unique(data_analysis$all_info))
+for(i in 1:length(all_info))
+  
+{
+  data_oi <- data_analysis[data_analysis$all_info==all_info[i],]
+  avg_ab <- colMeans(as.matrix(data_oi[,13:ncol(data_oi)]))
+  #row_to_add <- c(all_info[i],avg_ab)
+  a <-as.vector( strsplit(all_info[i], "_"))
+  row_to_add <- c(all_info[i],a[[1]][1:6],avg_ab)
+  
+  final_table <- rbind(final_table,row_to_add)
+  
+}
+colnames(final_table)[c(1:7)] <-c("all_info","res","condition","sample",	"cond_exp",	"pop",	"antibiotic")
+
+
+write.csv(final_table,"averages.csv")
+
+averages_data <- read.csv("averages.csv")
+averages_data <- averages_data[,-1]
+###all flours
+flour_row <- which(averages_data$sample=="flour")
+flour <- averages_data[flour_row,]
+flour_anc <- flour[flour$pop=="Anc",]
+flour_oi <- flour_anc[(flour_anc$cond_exp=="US"|flour_anc$cond_exp=="S"),]
+top_five <- NULL
+names <- flour_oi[,c(1:7)]
+data_oi <- flour_oi[,-c(1:7)]
+data_oi_t <- t(data_oi) 
+colnames(data_oi_t) <- names[,1]
+bact_names <- rownames(data_oi_t)
+k= 1
+top_five = NULL
+for(i in 1: length(colnames(data_oi_t)))
+{
+ordered_num <- order(data_oi_t[,i],decreasing = T) 
+for(j in 1:5)
+{
+row_to_add <- c(data_oi_t[ordered_num[j],])
+
+top_five <- rbind(top_five,row_to_add)
+rownames(top_five)[k] <- bact_names[ordered_num[j]]
+k =k+1
+}
+}
+top_five <- top_five[unique(rownames(top_five)),]
+total_sum <- colSums(top_five[])
+total_sum_orig <- colSums(data_oi_t)
+others <- total_sum_orig - total_sum
+top_five <- rbind(top_five,others)
+a <-as.vector( strsplit(colnames(top_five),"_"))
+names_col <- NULL
+for(i in 1:8)
+{
+a1 <-paste(a[[i]][c(1)],"_",a[[i]][c(2)])
+names_col <- rbind(names_col,a1)
+}
+colnames(top_five) = names_col
+top_five_d = top_five
+top_five <- top_five[,c("wh _ US","wh _ S","rg _ US","rg _ S","co _ US","co _ S","jw _ US","jw _ S")]
+library(RColorBrewer)
+cols<-colorRampPalette(brewer.pal(n=10, name = "Set3"))( length(rownames(top_five)) )
+a <-as.vector( strsplit(rownames(top_five),"_"))
+
+names_OTU <- NULL
+for(i in 1:length(rownames(top_five)))
+{
+  a1 <-paste(a[[i]][c(1)])
+  names_OTU <- rbind(names_OTU,a1)
+}
+x1 = length(colnames(top_five))
+x1= x1+1
+
+ dev.off(); 
+ 
+pdf("Fig S2_all_flours.pdf")
+par(bty='n')
+ #palette()
+ palette(cols)
+barplot(as.matrix(top_five),xlim=c(0,x1),cex.axis=0.8,ylab = "Relative Abundance",ylim=c(0,1), col=c(1:length(rownames(top_five))))
+legend("right",y.intersp = 1,x.intersp =1, cex=0.85,bty='n',inset=c(0,0),names_OTU,lwd=c(5), col=c(1:length(rownames(top_five))), lty = c(1))
+
+       dev.off()
+
+       pdf("Fig S2_all_flours_legend.pdf")
+       plot.new()
+legend("center",y.intersp = 1,x.intersp = 1,border = "black",xpd=10, cex=0.48,inset=c(0,0),rownames(top_five), fill=c(1:length(rownames(top_five))), lty = c(1))
+       dev.off()
