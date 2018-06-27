@@ -11,13 +11,11 @@ data_miseq<- data_miseq[,-1]
 data_attr <- data_miseq[,1:13]
 data2 <- data_miseq[ ,-(1:13)]
 data_forabun <- data2
-sum_allreads <- rowsum(data_forabun)
+sum_allreads <- rowsum(data_forabun) # calculating total sum
 sum_allreads
 rownames(data_forabun) <- data_attr$code_block
-#ds<-rankabundance(data_forabun)
-#rankabunplot(ds)
-#specaccum(data_forabun, method = "exact", permutations = 100,conditioned =TRUE, gamma = "jack1")
-data2[ data2 < 20] <-0 
+
+data2[ data2 < 20] <-0 # setting abundance of OTUs with <20 reads to 0
 rowselem<-which(colSums(data2)!=0)
 #dat4_0 = dat4[ rowSums(dat4)!=0, ]
 datx <- data2
@@ -31,7 +29,7 @@ for( i in 1:length(data_attr$code))
 }
 dat_abun<- replace(dat_abun, is.na(dat_abun), 0)
 #head(dat_abun)
-abundance <-cbind(data_attr,dat_abun)
+abundance <-cbind(data_attr,dat_abun) # final table with relative abundance
 
 
 
@@ -47,7 +45,7 @@ data_miseq <- read.csv("without_mit_chl_raw.csv")
 data_miseq <- data_miseq[,-1]
 data_attr <- data_miseq[,1:9]
 data2 <- data_miseq[ ,-(1:9)]
-data2[ data2 < 20] <-0 
+data2[ data2 < 20] <-0 # setting abundance of OTUs with <20 reads to 0
 rowselem<-which(colSums(data2)!=0)
 #dat4_0 = dat4[ rowSums(dat4)!=0, ]
 datx <- data2
@@ -82,7 +80,7 @@ num <- which(rowSums(data_analysis[,13:ncol(data_analysis)])==0)
 elim <- data_analysis[num,]
 
 write.csv(elim,"all_removed.csv")
-data_analysis <- data_analysis[-num,]
+data_analysis <- data_analysis[-num,] # all non zero replicates
 all_info <- as.vector(unique(data_analysis$all_info))
 for(i in 1:length(all_info))
   
@@ -103,7 +101,7 @@ write.csv(final_table,"averages.csv")
 
 averages_data <- read.csv("averages.csv")
 averages_data <- averages_data[,-1]
-###all flours
+### example code to geenrate a plot for top 5 averaged microbes for all flours, untreated and UV treated
 flour_row <- which(averages_data$sample=="flour")
 flour <- averages_data[flour_row,]
 flour_anc <- flour[flour$pop=="Anc",]
@@ -113,7 +111,7 @@ names <- flour_oi[,c(1:7)]
 data_oi <- flour_oi[,-c(1:7)]
 data_oi_t <- t(data_oi) 
 colnames(data_oi_t) <- names[,1]
-bact_names <- rownames(data_oi_t)
+bact_names <- rownames(data_oi_t) # storing the bacterial names
 k= 1
 top_five = NULL
 for(i in 1: length(colnames(data_oi_t)))
