@@ -8,26 +8,26 @@ data_miseq <- read.csv("without_mit_chl_raw.csv")
 data1 <- data_miseq[,1]
 
 data_miseq<- data_miseq[,-1]
-data_attr <- data_miseq[,1:13]
-data2 <- data_miseq[ ,-(1:13)]
-data_forabun <- data2
+data_attr <- data_miseq[,1:13] ## all the data attributes
+data2 <- data_miseq[ ,-(1:13)]## only the reads
+data_forabun <- data2 ## creating a copy so that the original doesnt get changed
 sum_allreads <- rowsum(data_forabun) # calculating total sum
-sum_allreads
-rownames(data_forabun) <- data_attr$code_block
+sum_allreads # view the sum
+rownames(data_forabun) <- data_attr$code_block #the code_block summarizes the entire information about a sample
 
 data2[ data2 < 20] <-0 # setting abundance of OTUs with <20 reads to 0
-rowselem<-which(colSums(data2)!=0)
-#dat4_0 = dat4[ rowSums(dat4)!=0, ]
-datx <- data2
-datx <- datx[,rowselem]
+rowselem<-which(colSums(data2)!=0) # finding out the cols which do not have zero values for everything(hence sum!= 0)
+
+datx <- data2 # creating a copy again before making any changes
+datx <- datx[,rowselem] # retaining only the non zero values sums containing bacteria
 a <- rowSums(datx)
 dat_abun <- datx
-abundance <- NULL
+abundance <- NULL # creating a Null to store the abundance values
 for( i in 1:length(data_attr$code))
 {
-  dat_abun[i,] = dat_abun[i,]/a[i]
+  dat_abun[i,] = dat_abun[i,]/a[i] # for each row, calculating the relative abundance
 }
-dat_abun<- replace(dat_abun, is.na(dat_abun), 0)
+dat_abun<- replace(dat_abun, is.na(dat_abun), 0) # changing NA to 0
 #head(dat_abun)
 abundance <-cbind(data_attr,dat_abun) # final table with relative abundance
 
@@ -37,7 +37,7 @@ write.csv(abundance,"with_mit_chl_abundance.csv")
 
 # creating relative abundance without mitochondria+chloroplast ------------
 
-
+##same as above
 
 
 data_miseq <- read.csv("without_mit_chl_raw.csv")
@@ -73,15 +73,15 @@ library(RColorBrewer)
 data_orig <- read.csv("without_mit_chl.csv",row.names = 1 )
 
 ##To create averages across replicates##
-data_analysis <- data_orig[,-1]
-#data_analysis[,12]
+data_analysis <- data_orig[,-1] #creating a copy
+
 final_table <- NULL
-num <- which(rowSums(data_analysis[,13:ncol(data_analysis)])==0)
-elim <- data_analysis[num,]
+num <- which(rowSums(data_analysis[,13:ncol(data_analysis)])==0) # for each sample, making sure that the total bacterial reads are not zero.
+elim <- data_analysis[num,] #eliminating the zero replicates
 
 write.csv(elim,"all_removed.csv")
 data_analysis <- data_analysis[-num,] # all non zero replicates
-all_info <- as.vector(unique(data_analysis$all_info))
+all_info <- as.vector(unique(data_analysis$all_info))# all_info contains all the relevant information about the sample
 for(i in 1:length(all_info))
   
 {
@@ -94,7 +94,7 @@ for(i in 1:length(all_info))
   final_table <- rbind(final_table,row_to_add)
   
 }
-colnames(final_table)[c(1:7)] <-c("all_info","res","condition","sample",	"cond_exp",	"pop",	"antibiotic")
+colnames(final_table)[c(1:7)] <-c("all_info","res","condition","sample",	"cond_exp",	"pop",	"antibiotic") #writing the information labels back
 
 
 write.csv(final_table,"averages.csv")
@@ -104,11 +104,11 @@ averages_data <- averages_data[,-1]
 ### example code to geenrate a plot for top 5 averaged microbes for all flours, untreated and UV treated
 flour_row <- which(averages_data$sample=="flour")
 flour <- averages_data[flour_row,]
-flour_anc <- flour[flour$pop=="Anc",]
-flour_oi <- flour_anc[(flour_anc$cond_exp=="US"|flour_anc$cond_exp=="S"),]
-top_five <- NULL
-names <- flour_oi[,c(1:7)]
-data_oi <- flour_oi[,-c(1:7)]
+flour_anc <- flour[flour$pop=="Anc",] #getting all the samples which are ancestral
+flour_oi <- flour_anc[(flour_anc$cond_exp=="US"|flour_anc$cond_exp=="S"),] #retaining only the US(control) and S(UV treated) samples 
+top_five <- NULL # empty matrix to store the values later
+names <- flour_oi[,c(1:7)] #data attributes
+data_oi <- flour_oi[,-c(1:7)] #only the average reads
 data_oi_t <- t(data_oi) 
 colnames(data_oi_t) <- names[,1]
 bact_names <- rownames(data_oi_t) # storing the bacterial names
@@ -116,20 +116,20 @@ k= 1
 top_five = NULL
 for(i in 1: length(colnames(data_oi_t)))
 {
-ordered_num <- order(data_oi_t[,i],decreasing = T) 
+ordered_num <- order(data_oi_t[,i],decreasing = T)  #setting the values in descending order
 for(j in 1:5)
 {
 row_to_add <- c(data_oi_t[ordered_num[j],])
 
 top_five <- rbind(top_five,row_to_add)
-rownames(top_five)[k] <- bact_names[ordered_num[j]]
+rownames(top_five)[k] <- bact_names[ordered_num[j]] #adding the row
 k =k+1
 }
 }
-top_five <- top_five[unique(rownames(top_five)),]
+top_five <- top_five[unique(rownames(top_five)),] # removing duplicates
 total_sum <- colSums(top_five[])
 total_sum_orig <- colSums(data_oi_t)
-others <- total_sum_orig - total_sum
+others <- total_sum_orig - total_sum # calculating the abundance of everything else under "others" 
 top_five <- rbind(top_five,others)
 a <-as.vector( strsplit(colnames(top_five),"_"))
 names_col <- NULL
@@ -139,6 +139,7 @@ a1 <-paste(a[[i]][c(1)],"_",a[[i]][c(2)])
 names_col <- rbind(names_col,a1)
 }
 colnames(top_five) = names_col
+##plotting the values as a stacked bar plot
 top_five_d = top_five
 top_five <- top_five[,c("wh _ US","wh _ S","rg _ US","rg _ S","co _ US","co _ S","jw _ US","jw _ S")]
 library(RColorBrewer)
